@@ -71,6 +71,9 @@ def get_comments_for_subreddit(subreddit_name,after):
     print("comments pushed to ES ")
     
     return jsonResponse['data']['after']
+
+
+
     
 
 def fetch_comments(subreddit_name):
