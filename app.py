@@ -44,13 +44,14 @@ def prepare_es_actions(all_data, data_type):
     return actions
 
 
-def get_posts_for_subreddit(subreddit_name,after):
+def get_posts_for_subreddit(subreddit_name,data_type,after):
     headers = {"Authorization": f"bearer {access_token}", "User-Agent": f"ChangeMeClient/0.1 by {reddit_username}"}
     response = requests.get(f"https://oauth.reddit.com/r/{subreddit_name}/new?limit=100&after={after}", headers=headers)
 
     jsonResponse=response.json()
+    all_posts_data=jsonResponse['data']['children']
     
-    actions=prepare_es_actions(jsonResponse['data']['children'],'posts')
+    actions=prepare_es_actions(all_posts_data,data_type)
     
     helpers.bulk(es, actions)
     print("posts pushed to ES")
@@ -59,43 +60,36 @@ def get_posts_for_subreddit(subreddit_name,after):
 
         
 
-def get_comments_for_subreddit(subreddit_name,after):
+def get_comments_for_subreddit(subreddit_name,data_type,after):
     headers = {"Authorization": f"bearer {access_token}", "User-Agent": f"ChangeMeClient/0.1 by {reddit_username}"}
     response = requests.get(f"https://oauth.reddit.com/r/{subreddit_name}/comments?limit=100&after={after}", headers=headers)
 
     jsonResponse=response.json()
+    all_comments_data=jsonResponse['data']['children']
     
-    actions=prepare_es_actions(jsonResponse['data']['children'],'comments')
+    actions=prepare_es_actions(all_comments_data,data_type)
     
     helpers.bulk(es, actions)    
     print("comments pushed to ES ")
     
     return jsonResponse['data']['after']
-
-
-
-    
-
-def fetch_comments(subreddit_name):
-    after=""  
-    while 1:     
-        after=get_comments_for_subreddit(subreddit_name,after) 
-        print(after) 
+  
+   
+#can fetch only upto 1000 posts and 1000 comments for a given subreddit
+def fetch_data(subreddit_name, data_type):
+    after = ""
+    while True:
+        if data_type == "posts":
+            after = get_posts_for_subreddit(subreddit_name,data_type,after)
+        elif data_type == "comments":
+            after = get_comments_for_subreddit(subreddit_name,data_type,after)
+        print(after)
         if after is None:
             break
-        
-def fetch_posts(subreddit_name):
-    after=""  
-    while 1:     
-        after=get_posts_for_subreddit(subreddit_name,after) 
-        print(after) 
-        if after is None:
-            break    
-                
-        
+
 if __name__ == "__main__":
-    fetch_posts("Cricket")
-    fetch_comments("Cricket")    
+    fetch_data("Cricket", "posts")
+    fetch_data("Cricket", "comments")
         
     
 
